@@ -87,7 +87,7 @@ namespace BookmarksManager
                 if (AutoDetectEncoding)
                 {
                     InputEncoding = content.GetEncoding();
-                    var headerLenghtBytes = HeaderLength*InputEncoding.GetMaxByteCount(1);
+                    var headerLenghtBytes = HeaderLength * InputEncoding.GetMaxByteCount(1);
                     var toRead = headerLenghtBytes > 0 && headerLenghtBytes < content.Length ? headerLenghtBytes : content.Length;
                     var header = InputEncoding.GetString(content, 0, toRead);
                     InputEncoding = GetEncoding(header);
@@ -105,7 +105,7 @@ namespace BookmarksManager
 
         private BookmarkFolder Parse(byte[] content)
         {
-            var parser = new HTMLparser(content) {DecodeEntities = true};
+            var parser = new HTMLparser(content) { DecodeEntities = true };
             var rootFolder = ParseFolder(parser, null, true);
             return rootFolder;
         }
@@ -157,12 +157,16 @@ namespace BookmarksManager
         private IBookmarkItem ParseItem(HTMLparser parser)
         {
             BookmarkLink item = null;
+            item = new BookmarkLink();
+            item.Description = "";
+            item.Title = "";
+
             HTMLchunk chunk, prevChunk = parser.CurrentChunk;
             while ((chunk = parser.ParseNext()) != null)
             {
                 if (chunk.IsOpenTag && chunk.Tag == "a")
                 {
-                    item = new BookmarkLink();
+                    item = new BookmarkLink() { Title = "" };
                     AssignLinkAttributes(item, chunk.oParams);
                     item.Title = GetTextOrDontMove(parser);
                 }
@@ -190,7 +194,7 @@ namespace BookmarksManager
         private string GetTextOrDontMove(HTMLparser parser)
         {
             var textChunk = parser.ParseNext();
-            if (textChunk.IsText)
+            if (textChunk != null && textChunk.IsText)
                 return textChunk.HTML;
             parser.StepBack(textChunk);
             return null;
@@ -256,16 +260,26 @@ namespace BookmarksManager
         private byte[] DecodeEmbededIcon(string data, out string contentType)
         {
             contentType = null;
-            if (string.IsNullOrEmpty(data))
-                return null;
-            var parts = data.Split(',', ':', ';');
-            if (parts.Length != 4)
-                return null;
-            contentType = parts[1];
-            if ("base64".Equals(parts[2], StringComparison.CurrentCultureIgnoreCase))
+            try
             {
-                return Convert.FromBase64String(parts[3]);
+                if (string.IsNullOrEmpty(data))
+                    return null;
+                var parts = data.Split(',', ':', ';');
+                if (parts.Length != 4)
+                    return null;
+                contentType = parts[1];
+                if ("base64".Equals(parts[2], StringComparison.CurrentCultureIgnoreCase))
+                {
+                    return Convert.FromBase64String(parts[3]);
+                }
+
             }
+            catch (System.Exception)
+            {
+
+
+            }
+
             return null;
         }
 

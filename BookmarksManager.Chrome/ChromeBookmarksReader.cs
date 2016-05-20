@@ -23,9 +23,24 @@ namespace BookmarksManager.Chrome
             if (IsBookmarksFile(inputString)) //chrome bookmarks file
             {
                 var json = JObject.Parse(inputString);
-                var rootFolders = json["roots"].Select(root => root.First().ToObject<ChromeBookmarkModel>());
-                return TransformModel(rootFolders);
 
+                var chromeBookmarkModel = new List<ChromeBookmarkModel>();
+
+                foreach (var root in json["roots"])
+                {
+                    try
+                    {
+                        var firstMatch = root.First().ToObject<ChromeBookmarkModel>();
+
+                        chromeBookmarkModel.Add(firstMatch);
+                    }
+                    catch (Exception)
+                    {
+
+                    }
+                }
+
+                return TransformModel(chromeBookmarkModel);
             }
             else //chrome bookmarks from browser API
             {
@@ -37,10 +52,18 @@ namespace BookmarksManager.Chrome
         protected virtual BookmarkFolder TransformModel(IEnumerable<ChromeBookmarkModel> model)
         {
             var root = new BookmarkFolder();
+
             foreach (var m in model)
             {
-                root.Add(ReadItems(m));
+                try
+                {
+                    root.Add(ReadItems(m));
+                }
+                catch (Exception)
+                {
+                }
             }
+
             return root;
         }
 
@@ -56,7 +79,7 @@ namespace BookmarksManager.Chrome
         {
             if (!string.IsNullOrEmpty(model.url) && model.children == null)
             {
-                var item = new BookmarkLink(model.url, model.title??model.name);
+                var item = new BookmarkLink(model.url, model.title ?? model.name);
                 AddAttributes(item.Attributes, model);
                 item.Added = DateTimeHelper.FromUnixTimeStamp(model.dateadded ?? model.date_added);
                 item.LastModified = DateTimeHelper.FromUnixTimeStamp(model.dateGroupModified ?? model.date_modified);
@@ -66,8 +89,8 @@ namespace BookmarksManager.Chrome
             {
                 var folder = new BookmarkFolder(model.title ?? model.name);
                 AddAttributes(folder.Attributes, model);
-                folder.Added = DateTimeHelper.FromUnixTimeStamp(model.dateadded??model.date_added);
-                folder.LastModified = DateTimeHelper.FromUnixTimeStamp(model.dateGroupModified??model.date_modified);
+                folder.Added = DateTimeHelper.FromUnixTimeStamp(model.dateadded ?? model.date_added);
+                folder.LastModified = DateTimeHelper.FromUnixTimeStamp(model.dateGroupModified ?? model.date_modified);
                 if (model.children != null)
                 {
                     foreach (var inner in model.children.OrderBy(x => x.index ?? 0))
